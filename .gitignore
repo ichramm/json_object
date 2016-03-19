@@ -1,0 +1,13 @@
+*.user
+*.ncb
+*.suo
+*.sdf
+*.obj
+*.pdb
+*.idb
+*.o
+Debug/
+Release/
+/.kdev4/
+json_object.kdev4
+
