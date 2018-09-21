@@ -1,80 +1,71 @@
+###########################
+# File: 	Makefile.in
 #
-# Makefile for json_object
+# Date: 	Feb 03, 2015
 #
-PROJECT_NAME     =json_object
-PROJECT_VERSION ?=2
+# Author: 	Tomás Kelly <tomas.kelly@intraway.com>
+# Owner: 	Tomás Kelly <tomas.kelly@intraway.com>
+#
+###########################
 
-Target ?= Release
+# There are "reserved" variables that you should not modify:
+# - $(ROOT) is the top level directory of the project tree
+# - $(MK) is the directory where the included *.mk makefiles are
 
-LIB_NAME:=$(PROJECT_NAME)
+#######################################################
+### Makefile Framework
+#######################################################
 
-INCLUDE_DIR       ?=/usr/local/include
-LIB_DIR           ?=/usr/local/lib
+##
+# This variable is set by the C++ gradle plugin based on the
+# property 'component', which is set in gradle.properties.
+##
+COMPONENT := $(strip $(COMPONENT))
 
-BOOST_VERSION ?=1_55
-BOOST_DIR     ?=$(INCLUDE_DIR)/boost-$(BOOST_VERSION)
-BOOST_LIB     ?=$(LIB_DIR)
+##
+# Makefile Template
+#
+# Reserved variables that MUST be set:
+# - $(ROOT): Top level directory of the project tree, from where 'make' will be executed.
+# - $(MK): Directory in which all the build system's *.mk files are located
+##
+ROOT := .
+MK := $(shell readlink -f $(ROOT)/make)
 
-CPPC   ?= g++
-CC     ?= gcc
-LINKER ?= g++
+##
+# Uncomment this to disable compiler optimizations in release mode
+# The default setting is to enable compiler optimizations up to level 2
+##
+#DONTOPTIMIZE=true
 
-GCC_VERSION          ?= $(shell expr substr "`$(CPPC) -dumpversion | tr -dc '[0-9]'`" 1 2)
+##
+# Load the build system's configuration
+##
+include $(MK)/main.mk
 
-ROOT_DIR   =.
-SRC_DIR    = $(ROOT_DIR)/src
-BUILD_DIR  = $(ROOT_DIR)/build
-OUTPUT_DIR = $(BUILD_DIR)/lib/$(Target)
-OBJS_ROOT  = $(BUILD_DIR)/.obj
+##
+# Set this variable if your package directory is different from the default.
+# Default package directory: $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)
+# Each module has its own package directory so setting this variable makes
+# sense when your project puts multiple modules in the same package
+#PACKAGEDIR=$(PKGDIR.base)/$(COMPONENT)-$(VERSION.SHORT)
 
+##
+# Specify the relative path to all the modules (including main module) that are to be loaded into the build system's
+##
+MODULES := $(shell find $(ROOT)/src -name \*.mk 2>/dev/null | sort)
+$(foreach MODULE,$(MODULES),$(eval $(call CMDS.MODULE,$(MODULE))))
 
-OBJS_DIR = $(OBJS_ROOT)/$(Target)
-OBJS     = $(OBJS_DIR)/json_object.o \
-           $(OBJS_DIR)/libjson.o \
-	   $(OBJS_DIR)/json_diffcheck.o \
-	   $(OBJS_DIR)/encodings.o \
-	   $(OBJS_DIR)/json_io.o
+##
+# Specify the relative path to all the examples that are to be loaded into the build system's
+# By default, all tests within the 'example' directory will be loaded
+##
+EXAMPLES := $(shell find $(ROOT)/example -name \*.mk 2>/dev/null | sort)
+$(foreach EXAMPLE,$(EXAMPLES),$(eval $(call CMDS.EXAMPLE,$(EXAMPLE))))
 
-CFLAGS  :=$(CFLAGS) -Wall -Wextra -pedantic -fPIC -g -c
-LDFLAGS :=$(LDFLAGS) -Wall -fPIC -g -shared
-INCLUDES = -I$(ROOT_DIR)/include -I$(BOOST_DIR)
-
-ifeq (Debug, $(findstring Debug,$(Target)))
-	CFLAGS   :=$(CFLAGS) -D_DEBUG
-else
-	CFLAGS :=$(CFLAGS) -O2
-endif
-
-# TODO: Check for GCC >= 4.7 and compile C++11 by default (at least in v2)
-#--std=c++11
-CXXFLAGS =$(CFLAGS)
-
-OUTPUT_LIB  =lib$(LIB_NAME).so
-OUTPUT_FILE =$(OUTPUT_DIR)/$(OUTPUT_LIB)
-LDFLAGS    :=$(LDFLAGS) -Wl,-soname,$(OUTPUT_LIB)
-
-CPPCOMPILE =$(CPPC) $(CXXFLAGS) "$<" -o "$(OBJS_DIR)/$(*F).o" $(INCLUDES)
-CCOMPILE   =$(CC) $(CFLAGS) "$<" -o "$(OBJS_DIR)/$(*F).o" $(INCLUDES)
-LINK       =$(LINKER) $(LDFLAGS) -o "$(OUTPUT_FILE)" $(OBJS)
-
-build : $(OUTPUT_FILE)
-
-$(OBJS_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CPPCOMPILE)
-$(OBJS_DIR)/%.o: $(SRC_DIR)/detail/%.cpp
-	$(CPPCOMPILE)
-$(OBJS_DIR)/libjson.o: $(SRC_DIR)/detail/libjson/json.c
-	$(CCOMPILE) -Wno-extra -Wno-variadic-macros
-
-$(OUTPUT_FILE): $(OBJS_DIR) $(OUTPUT_DIR) $(OBJS)
-	$(LINK)
-	$(POST_BUILD_EVENTS)
-
-$(OBJS_DIR):
-	mkdir -p $(OBJS_DIR)
-
-$(OUTPUT_DIR):
-	mkdir -p $(OUTPUT_DIR)
-
-clean:
-	rm -rf $(BUILD_DIR)
+##
+# Specify the relative path to all the tests that are to be loaded into the build system's
+# By default, all tests within the 'test' directory will be loaded
+##
+TESTS := $(shell find $(ROOT)/test -name \*.mk 2>/dev/null | sort)
+$(foreach TEST,$(TESTS),$(eval $(call CMDS.TEST,$(TEST))))

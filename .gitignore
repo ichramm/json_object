@@ -1,13 +1,51 @@
+# Visual Studio
+*.gch
+*.pch
 *.user
 *.ncb
 *.suo
 *.sdf
-*.obj
 *.pdb
 *.idb
+
+# Compiled Object files
 *.o
+*.obj
+
+# Compiled Libraries
+*.a
+*.so
+
+# Directories
 Debug/
 Release/
-/.kdev4/
-json_object.kdev4
+make/
+.obj
+analysis
+build
+coverage
+libs
+profile
 
+# Eclipse Project
+.cproject
+.project
+
+#KDevelop project
+.kdev4/
+*.kdev4
+
+# Executables
+*-analysis
+*-coverage
+*-debug
+*-profile
+*-release
+
+# Ignored Files/Folders
+.cccc
+*.db
+*.lcov
+.settings
+valgrind.out
+valgrind.xml
