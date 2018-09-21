@@ -19,7 +19,6 @@
 # Directories
 Debug/
 Release/
-make/
 .obj
 analysis
 build

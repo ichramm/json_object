@@ -1,0 +1,112 @@
+###########################
+# File: 	module.mk.in
+#
+# Date: 	Jan 09, 2015
+#
+# Author: 	Tomás Kelly <tomas.kelly@intraway.com>
+# Owner: 	Tomás Kelly <tomas.kelly@intraway.com>
+#
+###########################
+
+##
+# Target name
+##
+TGT := $(strip NAME)
+
+##
+# Target Type (BINARY|STATIC|SHARED)
+# IMPORTANT: Don't use STATIC and SHARED directly unless it is strictly required.
+#            Use $(LINK_TYPE) instead (default: STATIC).
+#            Like this: TGT.TYPE := $(LINK_TYPE)
+##
+TGT.TYPE := BINARY
+
+##
+# Target Specific Prerequisites - Required Library (.a|.so)
+##
+TGT.PREREQS.LIBS :=
+
+##
+# Target Specific Prerequisites - Required Targets
+##
+TGT.PREREQS.TGTS :=
+
+##
+# Target Specific - Generated Source Files
+##
+TGT.GENRAWS := $(shell find $(RDIR) -type f -name "*.raw" -print | sort | sed 's/^\.\///')
+TGT.GENSRCS := $(addprefix $(GENDIR.base)/, $(patsubst %.raw, %.cpp, $(subst src/,,$(TGT.GENRAWS))))
+
+##
+# Target Specific - C Files/Flags (Build Mode Specific Flags Are Appended After TGT.CFLAGS)
+##
+TGT.CFLAGS :=
+TGT.CFLAGS.analysis :=
+TGT.CFLAGS.coverage :=
+TGT.CFLAGS.debug :=
+TGT.CFLAGS.profile :=
+TGT.CFLAGS.release :=
+
+TGT.CSRCS := $(shell find $(RDIR) -type f -name "*.c" -print | sort | $(SED) 's/^\.\///')
+
+##
+# Target Specific - C++ Files/Flags (Build Mode Specific Flags Are Appended After TGT.CXXFLAGS)
+##
+TGT.CXXFLAGS :=
+TGT.CXXFLAGS.analysis :=
+TGT.CXXFLAGS.coverage :=
+TGT.CXXFLAGS.debug :=
+TGT.CXXFLAGS.profile :=
+TGT.CXXFLAGS.release :=
+
+TGT.CXXSRCS := $(shell find $(RDIR) -type f -name "*.cpp" -print | sort | $(SED) 's/^\.\///')
+
+##
+# Target Specific - Linker Flags (Build Mode Specific Flags Are Appended After TGT.LDFLAGS)
+##
+TGT.LDFLAGS :=
+TGT.LDFLAGS.analysis :=
+TGT.LDFLAGS.coverage :=
+TGT.LDFLAGS.debug :=
+TGT.LDFLAGS.profile :=
+TGT.LDFLAGS.release :=
+
+###########################
+# Additional Target-Specific Rules
+###########################
+
+##
+# Recipes specified MUST used local variables:
+# CTGT: Current Target
+# CDIR: Current Directory
+##
+###########################
+# Install
+###########################
+$(TGT)-install:
+	$(call MAGENTA,"Installing $(CTGT)-$($(CTGT).LONGVERSION) into $(DESTDIR)...") && mkdir -p $(DESTDIR) && cp -rf $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/* $(DESTDIR)
+
+###########################
+# Package
+###########################
+$(TGT)-package:
+	$(call YELLOW,"Packing $(CTGT) \<$(BUILD)/$(BUILD.ARCH)\>...")
+	$(PRINT)$(RM) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/bin
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/conf
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/doc
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/etc
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/etc/init.d
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/log
+	$(PRINT)$(MKDIR) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/var
+	$(call YELLOW,"Packaging binary files...")
+	$(PRINT)$(CP) $(BINDIR.$(BUILD))/$($(CTGT).BIN) $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/bin
+	$(call YELLOW,"Generating MDS checksums...")
+	$(PRINT) cd $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/bin && md5sum $($(CTGT).BIN) > $($(CTGT).BIN).md5
+	$(call YELLOW,"Packaging binary links...")
+	$(PRINT) cd $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/bin/ && ln -sf $($(CTGT).BIN) $(CTGT)
+	$(call YELLOW,"Packaging documentation files...")
+	$(PRINT)$(CP) doc/ChangeLog (PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/doc && $(CP) doc/INSTALL.md (PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/doc/
+	$(call YELLOW,"Packaging environment files...")
+	$(PRINT)$(CP) scripts/etc/shell-mods.sh $(PKGDIR.base)/$(CTGT)-$($(CTGT).SHORTVERSION)/etc/shell-mods.sh.dist
